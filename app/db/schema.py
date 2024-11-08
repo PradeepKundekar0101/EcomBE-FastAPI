@@ -1,12 +1,18 @@
 from pydantic import BaseModel
 from sqlmodel import SQLModel, Field, Relationship
 from uuid import UUID,uuid4
+from enum import Enum
+
+class Role(Enum):
+    Admin = "ADMIN"
+    User = "USER"
 
 # =============USER======================
 class UserBase(SQLModel):
     username:str
     password:str
     address:str
+    role: Role | None = Field(default=Role.Admin)
 
 class User(UserBase,table=True):
     id: UUID = Field(default_factory= uuid4,primary_key=True)
@@ -43,3 +49,4 @@ class Order(OrderBase,table=True):
     id: UUID = Field(primary_key=True,default_factory=uuid4)
     user: User = Relationship(back_populates="orders")
     product: Product = Relationship(back_populates="orders")
+
