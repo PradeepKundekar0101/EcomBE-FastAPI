@@ -11,9 +11,7 @@ from config.settings import ALGO
 print(JWT_SECRET)
 authRouter = APIRouter()
 
-# Use bcrypt for hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 @authRouter.post("/signup", response_model=User, status_code=status.HTTP_201_CREATED)
 def createAccount(userData: UserCreate, session: Session = Depends(get_session)):
@@ -22,10 +20,7 @@ def createAccount(userData: UserCreate, session: Session = Depends(get_session))
         if existing_user:
             raise HTTPException(status_code=409, detail="Username already taken")
         
-        # Hash the password
         hashed_password = pwd_context.hash(userData.password)
-        
-        # Create a new user with the hashed password
         user = User(
             address=userData.address,
             username=userData.username,
@@ -46,16 +41,14 @@ def createAccount(userData: UserCreate, session: Session = Depends(get_session))
 @authRouter.post("/signin", status_code=status.HTTP_200_OK)
 def login(userData: UserLogin, session: Session = Depends(get_session)):
     try:
-        # Fetch the user
+
         user = session.exec(select(User).where(User.username == userData.username)).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Verify the password
         if not pwd_context.verify(userData.password, user.password):
             raise HTTPException(status_code=403, detail="Incorrect password")
         
-        # Generate a JWT token
         token = jwt.encode(
             {
                 "user_id": str(user.id),
@@ -66,7 +59,6 @@ def login(userData: UserLogin, session: Session = Depends(get_session)):
             algorithm=ALGO,
         )
         
-        # Return the user details and token
         return {
             "user": {
                 "username": user.username,

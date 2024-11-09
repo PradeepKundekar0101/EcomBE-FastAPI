@@ -40,7 +40,6 @@ def acquire_stock_lock(session: Session, product_id: int, required_quantity: int
 @orderRouter.post("/buy")
 def handle_buy(order: OrderBase, session: Session = Depends(get_session)):
     try:
-        # Get user and product outside the transaction
         user = session.get(User, order.user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -49,7 +48,7 @@ def handle_buy(order: OrderBase, session: Session = Depends(get_session)):
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
         
-        # Start transaction for stock update and order creation
+
         product_stock = acquire_stock_lock(
             session=session,
             product_id=order.product_id,
@@ -73,11 +72,11 @@ def handle_buy(order: OrderBase, session: Session = Depends(get_session)):
         
         product_stock.quantity -= order.quantity
         
-        # Add both changes to session
+
         session.add(product_stock)
         session.add(new_order)
         
-        # Commit the transaction
+
         try:
             session.commit()
             session.refresh(new_order)
