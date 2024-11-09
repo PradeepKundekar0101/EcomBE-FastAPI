@@ -34,8 +34,10 @@ class ProductBase(SQLModel):
 class Product(ProductBase,table=True):
     id: UUID = Field(default_factory=uuid4,primary_key=True)
     orders: list["Order"] = Relationship(back_populates="product")
+    stock: "Stock" = Relationship(back_populates="product")
 
 class ProductCreate(ProductBase):
+    default_quantity: int
     pass
 
 # =============ORDER======================
@@ -50,3 +52,12 @@ class Order(OrderBase,table=True):
     user: User = Relationship(back_populates="orders")
     product: Product = Relationship(back_populates="orders")
 
+#==================STOCKBASE=================
+
+class StockBase(SQLModel):
+    product_id: UUID = Field(foreign_key="product.id")
+    quantity: int = Field(default=0)
+
+class Stock(StockBase,table=True):
+    id: UUID = Field(primary_key=True,default_factory=uuid4)
+    product: Product = Relationship(back_populates="stock")

@@ -1,5 +1,5 @@
 from sqlmodel import create_engine,Session,SQLModel
-DB_URL="postgresql://postgres:test@localhost:5432/ecommerce"
+from config.secrets import DB_URL
 engine = create_engine(DB_URL,echo=False)
 def init_db():
     try:

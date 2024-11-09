@@ -1,13 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlmodel import Session
 from db.db import get_session
-from db.schema import Product, ProductCreate
-from jose import jwt, JWTError
-from fastapi import FastAPI
+from db.schema import Product, ProductCreate, Stock
 
 adminRouter = APIRouter()
-app = FastAPI()
-
 
 @adminRouter.post("/product")
 def create_product(data: ProductCreate, session: Session = Depends(get_session)):
@@ -18,8 +15,22 @@ def create_product(data: ProductCreate, session: Session = Depends(get_session))
         session.add(product)
         session.commit()
         session.refresh(product)
-        return {"message": "Product created", "data": product}
+        product_stock = Stock(product_id=product.id, quantity=data.default_quantity)
+        session.add(product_stock)
+        session.commit()
+        session.refresh(product_stock)
+        return JSONResponse(
+            content={
+                "name": product.name,
+                "price": product.price,
+                "description": product.description,
+                "id": str(product.id),
+                "default_quantity": product_stock.quantity,
+            },
+            status_code=201,
+        )
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail="Error")
 
 
@@ -29,9 +40,11 @@ def delete_product(productId: str, session: Session = Depends(get_session)):
         raise HTTPException(status_code=400, detail="Product Id not provided")
     try:
         product = session.get(Product, productId)
+        product_stock = session.get(Stock,product.stock.id)
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
         session.delete(product)
+        session.delete(product_stock)
         session.commit()
         return {"message": "Product deleted", "data": "Deleted"}
     except HTTPException:
